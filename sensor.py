@@ -88,27 +88,12 @@ class JellyseerrStatusSensor(CoordinatorEntity, SensorEntity):
         if self.coordinator.data is None:
             return {}
         
-        # Get requests with this status
-        requests = []
-        for request in self.coordinator.data["raw_results"]:
-            if request.get("status") == self._status_id:
-                media = request.get("media", {})
-                title = "Unknown"
-                if "title" in media:
-                    title = media["title"]
-                elif "tmdbId" in media:
-                    title = f"TMDB ID: {media['tmdbId']}"
-                
-                requests.append({
-                    "id": request.get("id"),
-                    "title": title,
-                    "type": request.get("type", "unknown"),
-                    "requested_by": request.get("requestedBy", {}).get("displayName", "Unknown"),
-                    "created_at": request.get("createdAt"),
-                })
+        # Get detailed requests for this status
+        detailed_requests = self.coordinator.data.get("detailed_requests", {})
+        requests = detailed_requests.get(self._status_id, [])
         
         return {
-            "requests": requests[:10],  # Limit to 10 to avoid attribute size issues
+            "requests": requests,
             "status_id": self._status_id,
             "status_name": self._status_name,
         }

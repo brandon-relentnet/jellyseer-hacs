@@ -1,0 +1,66 @@
+type: vertical-stack
+cards:
+  - type: horizontal-stack
+    cards:
+      - type: entity
+        entity: sensor.jellyseerr_pending_requests
+        name: Pending
+      - type: entity
+        entity: sensor.jellyseerr_approved_requests
+        name: Approved
+      - type: entity
+        entity: sensor.jellyseerr_processing_requests
+        name: Processing
+      - type: entity
+        entity: sensor.jellyseerr_available_requests
+        name: Available
+  - type: markdown
+    title: 🕒 Pending Requests
+    content: >
+      {% set requests = state_attr('sensor.jellyseerr_pending_requests',
+      'requests') or [] %} {% if requests %}
+        {% for request in requests %}
+        ## 🎬 {{ request.title }}
+        **Type:** {{ request.type | title }} {% if request.release_date %}| **Year:** {{ request.release_date[:4] }}{% endif %}{% if request.rating > 0 %} | **⭐ {{ request.rating }}/10**{% endif %}  
+        **👤 Requested by:** {{ request.requested_by }} on {{ request.created_at[:10] }}  
+        {% if request.genres %}**🎭 Genres:** {{ request.genres | join(', ') }}  {% endif %}
+        {% if request.overview %}
+        
+        **📖 Plot:** {{ request.overview[:300] }}{% if request.overview|length > 300 %}...{% endif %}
+        {% endif %}
+        {% if request.tmdb_id %}
+        **🔗 [View on TMDB](https://www.themoviedb.org/{{ request.type }}/{{ request.tmdb_id }})**  
+        {% endif %}
+        
+        ---
+        {% endfor %}
+      {% else %}
+        🎉 No pending requests!
+      {% endif %}
+  - type: markdown
+    title: ✅ Approved Requests
+    content: >
+      {% set requests = state_attr('sensor.jellyseerr_approved_requests',
+      'requests') or [] %} {% if requests %}
+        {% for request in requests[:5] %}
+        ## 🎬 {{ request.title }}
+        **Type:** {{ request.type | title }} {% if request.release_date %}| **Year:** {{ request.release_date[:4] }}{% endif %}{% if request.rating > 0 %} | **⭐ {{ request.rating }}/10**{% endif %}  
+        **👤 Requested by:** {{ request.requested_by }} on {{ request.created_at[:10] }}  
+        {% if request.genres %}**🎭 Genres:** {{ request.genres | join(', ') }}  {% endif %}
+        {% if request.overview %}
+        
+        **📖 Plot:** {{ request.overview[:200] }}{% if request.overview|length > 200 %}...{% endif %}
+        {% endif %}
+        {% if request.tmdb_id %}
+        **🔗 [View on TMDB](https://www.themoviedb.org/{{ request.type }}/{{ request.tmdb_id }})**  
+        {% endif %}
+        
+        ---
+        {% endfor %}
+        {% if requests|length > 5 %}*Showing 5 of {{ requests|length }} approved requests*{% endif %}
+      {% else %}
+        📋 No approved requests in recent sample
+      {% endif %}
+  - type: entity
+    entity: sensor.jellyseerr_total_requests
+    name: Total Requests

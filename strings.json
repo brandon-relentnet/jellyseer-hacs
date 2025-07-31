@@ -2,22 +2,61 @@
   "config": {
     "step": {
       "user": {
-        "title": "Jellyseerr Setup",
-        "description": "Configure your Jellyseerr connection",
+        "title": "Connect to Jellyseerr",
+        "description": "Enter your Jellyseerr server connection details.\n\n**To find your API key:**\n1. Open Jellyseerr in your browser\n2. Go to Settings → General\n3. Copy the API Key from the bottom of the page\n\n**Connection Examples:**\n• Local: `192.168.1.100` (port 5055, no SSL)\n• Remote: `jellyseerr.mydomain.com` (port 443, SSL enabled)\n• Custom port: `mydomain.com` (port 8096, SSL enabled)",
         "data": {
-          "host": "Host",
+          "host": "Server Address",
           "port": "Port",
-          "ssl": "Use SSL",
+          "ssl": "Use HTTPS/SSL",
           "api_key": "API Key"
+        },
+        "data_description": {
+          "host": "IP address or domain name (without http:// or https://)",
+          "port": "Port number (usually 5055 for HTTP or 443 for HTTPS)",
+          "ssl": "Enable if using HTTPS or if behind a reverse proxy with SSL",
+          "api_key": "Found in Jellyseerr Settings → General → API Key"
+        }
+      },
+      "options": {
+        "title": "Configure Jellyseerr Integration",
+        "description": "**Connection successful!** Found {total_requests} total requests.\n\nCustomize how the integration works:\n\n**Fetch Size:** How many recent requests to analyze for status counts. Larger numbers give more accurate counts but use more resources.\n\n**Update Interval:** How often to check for new requests (30 seconds to 1 hour).\n\n**Sensors:** Choose which sensors to create. You can always change these later in the integration options.",
+        "data": {
+          "fetch_size": "Sample Size for Status Counts",
+          "update_interval": "Update Interval (seconds)",
+          "enabled_sensors": "Enabled Sensors"
+        },
+        "data_description": {
+          "fetch_size": "Number of recent requests to fetch (25-200). Higher = more accurate status counts.",
+          "update_interval": "How often to update data in seconds (30-3600). Lower = more frequent updates.",
+          "enabled_sensors": "Select which sensors to create. Unselected sensors won't appear in Home Assistant."
         }
       }
     },
     "error": {
-      "cannot_connect": "Failed to connect to Jellyseerr. Please check your settings.",
-      "unknown": "Unexpected error occurred"
+      "cannot_connect": "Cannot connect to Jellyseerr server. Please check:\n• Server address and port are correct\n• Jellyseerr is running and accessible\n• Firewall/network allows connection\n• If using SSL, certificate is valid",
+      "invalid_api_key": "API key is invalid or doesn't have sufficient permissions. Please:\n• Check the API key is copied correctly\n• Verify the API key in Jellyseerr Settings → General\n• Ensure the API key has proper permissions",
+      "unknown": "An unexpected error occurred. Please check the Home Assistant logs for more details."
     },
     "abort": {
-      "already_configured": "Service is already configured"
+      "already_configured": "This Jellyseerr server is already configured. You can modify settings in the integration options."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Jellyseerr Integration Options",
+        "description": "Modify how your Jellyseerr integration behaves.\n\n**Note:** Changes take effect after saving and may require a few minutes to apply.",
+        "data": {
+          "fetch_size": "Sample Size for Status Counts",
+          "update_interval": "Update Interval (seconds)",
+          "enabled_sensors": "Enabled Sensors"
+        },
+        "data_description": {
+          "fetch_size": "Number of recent requests to analyze (25-200). Higher numbers give more accurate status counts but use more resources.",
+          "update_interval": "How often to check for updates in seconds (30-3600). Lower values mean more frequent updates but higher server load.",
+          "enabled_sensors": "Choose which sensors to show in Home Assistant. Disabled sensors will be removed."
+        }
+      }
     }
   }
 }

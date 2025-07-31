@@ -9,10 +9,11 @@ import voluptuous as vol
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_API_KEY, CONF_HOST, CONF_PORT, CONF_SSL
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+import homeassistant.helpers.config_validation as cv
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -24,6 +25,19 @@ DEFAULT_SSL = False
 SCAN_INTERVAL = timedelta(minutes=2)
 
 CONFIG_SCHEMA = vol.Schema({DOMAIN: vol.Schema({})}, extra=vol.ALLOW_EXTRA)
+
+# Service schemas
+SERVICE_APPROVE_REQUEST = "approve_request"
+SERVICE_DENY_REQUEST = "deny_request"
+
+APPROVE_REQUEST_SCHEMA = vol.Schema({
+    vol.Required("request_id"): cv.positive_int,
+})
+
+DENY_REQUEST_SCHEMA = vol.Schema({
+    vol.Required("request_id"): cv.positive_int,
+    vol.Optional("reason", default="Denied via Home Assistant"): str,
+})
 
 
 class JellyseerrAPI:
@@ -102,6 +116,47 @@ class JellyseerrAPI:
         except (asyncio.TimeoutError, aiohttp.ClientError) as err:
             _LOGGER.debug(f"Error fetching details for {tmdb_id}: {err}")
         return None
+
+    async def async_approve_request(self, request_id: int):
+        """Approve a request."""
+        url = f"{self._base_url}/request/{request_id}/approve"
+        headers = {"X-Api-Key": self._api_key, "Content-Type": "application/json"}
+        
+        _LOGGER.info(f"Approving request {request_id}")
+        
+        try:
+            async with async_timeout.timeout(10):
+                async with self._session.post(url, headers=headers, json={}) as response:
+                    if response.status == 200:
+                        _LOGGER.info(f"Successfully approved request {request_id}")
+                        return True
+                    else:
+                        _LOGGER.error(f"Failed to approve request {request_id}: {response.status}")
+                        return False
+        except (asyncio.TimeoutError, aiohttp.ClientError) as err:
+            _LOGGER.error(f"Error approving request {request_id}: {err}")
+            return False
+
+    async def async_deny_request(self, request_id: int, reason: str = "Denied via Home Assistant"):
+        """Deny a request."""
+        url = f"{self._base_url}/request/{request_id}/decline"
+        headers = {"X-Api-Key": self._api_key, "Content-Type": "application/json"}
+        data = {"reason": reason}
+        
+        _LOGGER.info(f"Denying request {request_id} with reason: {reason}")
+        
+        try:
+            async with async_timeout.timeout(10):
+                async with self._session.post(url, headers=headers, json=data) as response:
+                    if response.status == 200:
+                        _LOGGER.info(f"Successfully denied request {request_id}")
+                        return True
+                    else:
+                        _LOGGER.error(f"Failed to deny request {request_id}: {response.status}")
+                        return False
+        except (asyncio.TimeoutError, aiohttp.ClientError) as err:
+            _LOGGER.error(f"Error denying request {request_id}: {err}")
+            return False
 
     async def async_test_connection(self):
         """Test the connection to Jellyseerr."""
@@ -281,10 +336,41 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await coordinator.async_config_entry_first_refresh()
 
     hass.data.setdefault(DOMAIN, {})
-    hass.data[DOMAIN][entry.entry_id] = coordinator
+    hass.data[DOMAIN][entry.entry_id] = {
+        "coordinator": coordinator,
+        "api": api,
+    }
 
     # Forward the setup to the sensor platform
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+
+    # Register services
+    async def async_approve_request(call: ServiceCall):
+        """Handle approve request service call."""
+        request_id = call.data["request_id"]
+        success = await api.async_approve_request(request_id)
+        if success:
+            # Trigger coordinator refresh to update status
+            await coordinator.async_refresh()
+        return success
+
+    async def async_deny_request(call: ServiceCall):
+        """Handle deny request service call."""
+        request_id = call.data["request_id"]
+        reason = call.data.get("reason", "Denied via Home Assistant")
+        success = await api.async_deny_request(request_id, reason)
+        if success:
+            # Trigger coordinator refresh to update status
+            await coordinator.async_refresh()
+        return success
+
+    # Register the services
+    hass.services.async_register(
+        DOMAIN, SERVICE_APPROVE_REQUEST, async_approve_request, schema=APPROVE_REQUEST_SCHEMA
+    )
+    hass.services.async_register(
+        DOMAIN, SERVICE_DENY_REQUEST, async_deny_request, schema=DENY_REQUEST_SCHEMA
+    )
 
     return True
 
@@ -294,6 +380,10 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     
     if unload_ok:
+        # Remove services
+        hass.services.async_remove(DOMAIN, SERVICE_APPROVE_REQUEST)
+        hass.services.async_remove(DOMAIN, SERVICE_DENY_REQUEST)
+        
         hass.data[DOMAIN].pop(entry.entry_id)
 
     return unload_ok

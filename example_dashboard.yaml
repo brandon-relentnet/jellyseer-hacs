@@ -15,7 +15,7 @@ cards:
         entity: sensor.jellyseerr_available_requests
         name: Available
   - type: markdown
-    title: 🕒 Pending Requests
+    title: 🕒 Pending Requests - Click buttons to approve/deny
     content: >
       {% set requests = state_attr('sensor.jellyseerr_pending_requests',
       'requests') or [] %} {% if requests %}
@@ -32,34 +32,40 @@ cards:
         **🔗 [View on TMDB](https://www.themoviedb.org/{{ request.type }}/{{ request.tmdb_id }})**  
         {% endif %}
         
+        **🔢 Request ID:** {{ request.id }}
+        
         ---
         {% endfor %}
       {% else %}
         🎉 No pending requests!
       {% endif %}
+  - type: entities
+    title: ⚡ Quick Actions
+    entities:
+      - type: call-service
+        name: ✅ Test Approve (Request ID 496)
+        service: jellyseerr.approve_request
+        service_data:
+          request_id: 496
+        icon: mdi:check-circle
+      - type: call-service
+        name: ❌ Test Deny (Request ID 496)
+        service: jellyseerr.deny_request
+        service_data:
+          request_id: 496
+          reason: Denied from Home Assistant dashboard
+        icon: mdi:close-circle
   - type: markdown
-    title: ✅ Approved Requests
+    title: ✅ Recently Approved
     content: >
       {% set requests = state_attr('sensor.jellyseerr_approved_requests',
       'requests') or [] %} {% if requests %}
-        {% for request in requests[:5] %}
-        ## 🎬 {{ request.title }}
-        **Type:** {{ request.type | title }} {% if request.release_date %}| **Year:** {{ request.release_date[:4] }}{% endif %}{% if request.rating > 0 %} | **⭐ {{ request.rating }}/10**{% endif %}  
-        **👤 Requested by:** {{ request.requested_by }} on {{ request.created_at[:10] }}  
-        {% if request.genres %}**🎭 Genres:** {{ request.genres | join(', ') }}  {% endif %}
-        {% if request.overview %}
-        
-        **📖 Plot:** {{ request.overview[:200] }}{% if request.overview|length > 200 %}...{% endif %}
-        {% endif %}
-        {% if request.tmdb_id %}
-        **🔗 [View on TMDB](https://www.themoviedb.org/{{ request.type }}/{{ request.tmdb_id }})**  
-        {% endif %}
-        
-        ---
+        {% for request in requests[:3] %}
+        **{{ request.title }}** ({{ request.type | title }}) - {{ request.requested_by }}
         {% endfor %}
-        {% if requests|length > 5 %}*Showing 5 of {{ requests|length }} approved requests*{% endif %}
+        {% if requests|length > 3 %}*...and {{ requests|length - 3 }} more*{% endif %}
       {% else %}
-        📋 No approved requests in recent sample
+        📋 No recently approved requests
       {% endif %}
   - type: entity
     entity: sensor.jellyseerr_total_requests

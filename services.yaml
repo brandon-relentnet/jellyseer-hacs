@@ -1,0 +1,32 @@
+approve_request:
+  name: Approve Request
+  description: Approve a pending Jellyseerr request
+  fields:
+    request_id:
+      name: Request ID
+      description: The ID of the request to approve
+      required: true
+      selector:
+        number:
+          mode: box
+          min: 1
+
+deny_request:
+  name: Deny Request
+  description: Deny a pending Jellyseerr request
+  fields:
+    request_id:
+      name: Request ID
+      description: The ID of the request to deny
+      required: true
+      selector:
+        number:
+          mode: box
+          min: 1
+    reason:
+      name: Reason
+      description: Reason for denying the request
+      required: false
+      default: "Denied via Home Assistant"
+      selector:
+        text:

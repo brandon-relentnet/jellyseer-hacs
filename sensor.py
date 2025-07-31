@@ -8,7 +8,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from . import DOMAIN, JellyseerrDataUpdateCoordinator
+from . import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -36,7 +36,8 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up Jellyseerr sensor based on a config entry."""
-    coordinator = hass.data[DOMAIN][config_entry.entry_id]
+    integration_data = hass.data[DOMAIN][config_entry.entry_id]
+    coordinator = integration_data["coordinator"]
 
     entities = []
     
@@ -62,7 +63,7 @@ class JellyseerrStatusSensor(CoordinatorEntity, SensorEntity):
 
     def __init__(
         self,
-        coordinator: JellyseerrDataUpdateCoordinator,
+        coordinator,
         config_entry: ConfigEntry,
         status_id: int,
         status_name: str,
@@ -104,7 +105,7 @@ class JellyseerrTotalSensor(CoordinatorEntity, SensorEntity):
 
     def __init__(
         self,
-        coordinator: JellyseerrDataUpdateCoordinator,
+        coordinator,
         config_entry: ConfigEntry,
     ) -> None:
         """Initialize the sensor."""
@@ -142,7 +143,7 @@ class JellyseerrRecentSensor(CoordinatorEntity, SensorEntity):
 
     def __init__(
         self,
-        coordinator: JellyseerrDataUpdateCoordinator,
+        coordinator,
         config_entry: ConfigEntry,
     ) -> None:
         """Initialize the sensor."""

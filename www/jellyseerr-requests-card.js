@@ -460,7 +460,7 @@ window.customCards.push({
   name: 'Jellyseerr Requests Card',
   description: 'Display and manage Jellyseerr media requests with poster images',
   preview: false,
-  documentationURL: 'https://github.com/yourusername/jellyseerr-requests-card'
+  documentationURL: 'https://github.com/brandon-relentnet/jellyseerr-hacs'
 });
 
 console.info(

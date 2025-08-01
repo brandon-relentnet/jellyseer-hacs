@@ -127,7 +127,7 @@ This integration includes a custom card for displaying requests with poster imag
 
 ### Installation
 
-1. Copy `jellyseerr-requests-card.js` to your `www` folder
+1. The `jellyseerr-requests-card.js` file is automatically installed in the correct location
 2. Add it as a resource in your Lovelace configuration:
    ```yaml
    resources:

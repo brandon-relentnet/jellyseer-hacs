@@ -1,72 +1,265 @@
-type: vertical-stack
-cards:
-  - type: horizontal-stack
-    cards:
-      - type: entity
-        entity: sensor.jellyseerr_pending_requests
-        name: Pending
-      - type: entity
-        entity: sensor.jellyseerr_approved_requests
-        name: Approved
-      - type: entity
-        entity: sensor.jellyseerr_processing_requests
-        name: Processing
-      - type: entity
-        entity: sensor.jellyseerr_available_requests
-        name: Available
-  - type: markdown
-    title: 🕒 Pending Requests - Click buttons to approve/deny
-    content: >
-      {% set requests = state_attr('sensor.jellyseerr_pending_requests',
-      'requests') or [] %} {% if requests %}
-        {% for request in requests %}
-        ## 🎬 {{ request.title }}
-        **Type:** {{ request.type | title }} {% if request.release_date %}| **Year:** {{ request.release_date[:4] }}{% endif %}{% if request.rating > 0 %} | **⭐ {{ request.rating }}/10**{% endif %}  
-        **👤 Requested by:** {{ request.requested_by }} on {{ request.created_at[:10] }}  
-        {% if request.genres %}**🎭 Genres:** {{ request.genres | join(', ') }}  {% endif %}
-        {% if request.overview %}
-        
-        **📖 Plot:** {{ request.overview[:300] }}{% if request.overview|length > 300 %}...{% endif %}
-        {% endif %}
-        {% if request.tmdb_id %}
-        **🔗 [View on TMDB](https://www.themoviedb.org/{{ request.type }}/{{ request.tmdb_id }})**  
-        {% endif %}
-        
-        **🔢 Request ID:** {{ request.id }}
-        
-        ---
-        {% endfor %}
-      {% else %}
-        🎉 No pending requests!
-      {% endif %}
-  - type: entities
-    title: ⚡ Quick Actions
-    entities:
-      - type: call-service
-        name: ✅ Test Approve (Request ID 496)
-        service: jellyseerr.approve_request
-        service_data:
-          request_id: 496
-        icon: mdi:check-circle
-      - type: call-service
-        name: ❌ Test Deny (Request ID 496)
-        service: jellyseerr.deny_request
-        service_data:
-          request_id: 496
-          reason: Denied from Home Assistant dashboard
-        icon: mdi:close-circle
-  - type: markdown
-    title: ✅ Recently Approved
-    content: >
-      {% set requests = state_attr('sensor.jellyseerr_approved_requests',
-      'requests') or [] %} {% if requests %}
-        {% for request in requests[:3] %}
-        **{{ request.title }}** ({{ request.type | title }}) - {{ request.requested_by }}
-        {% endfor %}
-        {% if requests|length > 3 %}*...and {{ requests|length - 3 }} more*{% endif %}
-      {% else %}
-        📋 No recently approved requests
-      {% endif %}
-  - type: entity
-    entity: sensor.jellyseerr_total_requests
-    name: Total Requests
+  - type: sections
+    max_columns: 4
+    title: Jellyseerr
+    path: jellyseerr
+    icon: mdi:movie-search
+    theme: Catppuccin Mocha
+    sections:
+      - type: grid
+        cards:
+          - type: vertical-stack
+            cards:
+              - type: custom:bubble-card
+                card_type: select
+                entity: input_select.request_view
+                name: View Requests
+                icon: mdi:format-list-bulleted-type
+                show_attribute: false
+                attribute: options
+                show_state: true
+                sub_button:
+                  - hide_when_parent_unavailable: true
+                    visibility:
+                      - condition: state
+                        entity: input_select.request_view
+                        state: Pending
+                    icon: mdi:check-all
+                    show_state: false
+                    show_attribute: false
+                    attribute: restored
+                    show_name: false
+                    name: Approve All
+                    entity: script.jellyseerr_approve_all_pending
+                  - name: ''
+                    show_state: false
+                    entity: button.jellyseerr_refresh
+                    show_last_changed: false
+                    show_name: false
+                    show_attribute: false
+                    attribute: icon
+                    show_last_updated: false
+                    tap_action:
+                      action: toggle
+                    double_tap_action:
+                      action: more-info
+                    hold_action:
+                      action: more-info
+                  - entity: automation.jellyseerr_daily_summary
+                    tap_action:
+                      action: navigate
+                      navigation_path: '#automation-popup'
+                    icon: mdi:robot
+                    state_background: false
+              - type: horizontal-stack
+                cards:
+                  - type: custom:bubble-card
+                    card_type: button
+                    entity: sensor.jellyseerr_pending_requests
+                    button_type: state
+                    name: Pending
+                    icon: mdi:clock-outline
+                    force_icon: true
+                    show_state: true
+                    card_layout: large
+                    card_mod:
+                      style: |
+                        .bubble-button-card-container { 
+                          {% if states('input_select.request_view') == 'Pending' %}
+                            background: rgba(250, 179, 135, 0.3) !important;
+                            box-shadow: 0 0 10px rgba(250, 179, 135, 0.4);
+                          {% elif states('sensor.jellyseerr_pending_requests') | int > 0 %}
+                            background: rgba(250, 179, 135, 0.1) !important;
+                          {% endif %}
+                        }
+                    button_action:
+                      tap_action:
+                        action: call-service
+                        service: input_select.select_option
+                        service_data:
+                          entity_id: input_select.request_view
+                          option: Pending
+                  - type: custom:bubble-card
+                    card_type: button
+                    entity: sensor.jellyseerr_approved_requests
+                    button_type: state
+                    name: Approved
+                    icon: mdi:check-circle
+                    force_icon: true
+                    show_state: true
+                    card_layout: large
+                    card_mod:
+                      style: |
+                        .bubble-button-card-container { 
+
+                          {% if states('input_select.request_view') == 'Approved' %}
+                            background: rgba(166, 227, 161, 0.3) !important;
+                            box-shadow: 0 0 10px rgba(166, 227, 161, 0.4);
+                          {% endif %}
+                        }
+                    button_action:
+                      tap_action:
+                        action: call-service
+                        service: input_select.select_option
+                        service_data:
+                          entity_id: input_select.request_view
+                          option: Approved
+              - type: horizontal-stack
+                cards:
+                  - type: custom:bubble-card
+                    card_type: button
+                    entity: sensor.jellyseerr_processing_requests
+                    button_type: state
+                    name: Processing
+                    icon: mdi:progress-clock
+                    force_icon: true
+                    show_state: true
+                    card_layout: large
+                    card_mod:
+                      style: |
+                        .bubble-button-card-container { 
+
+                          {% if states('input_select.request_view') == 'Processing' %}
+                            background: rgba(137, 180, 250, 0.3) !important;
+                            box-shadow: 0 0 10px rgba(137, 180, 250, 0.4);
+                          {% endif %}
+                        }
+                    button_action:
+                      tap_action:
+                        action: call-service
+                        service: input_select.select_option
+                        service_data:
+                          entity_id: input_select.request_view
+                          option: Processing
+                  - type: custom:bubble-card
+                    card_type: button
+                    entity: sensor.jellyseerr_available_requests
+                    button_type: state
+                    name: Available
+                    icon: mdi:download-circle
+                    force_icon: true
+                    show_state: true
+                    card_layout: large
+                    card_mod:
+                      style: |
+                        .bubble-button-card-container { 
+
+                          {% if states('input_select.request_view') == 'Available' %}
+                            background: rgba(203, 166, 247, 0.3) !important;
+                            box-shadow: 0 0 10px rgba(203, 166, 247, 0.4);
+                          {% endif %}
+                        }
+                    button_action:
+                      tap_action:
+                        action: call-service
+                        service: input_select.select_option
+                        service_data:
+                          entity_id: input_select.request_view
+                          option: Available
+              - type: conditional
+                conditions:
+                  - entity: input_select.request_view
+                    state: Pending
+                card:
+                  type: vertical-stack
+                  cards:
+                    - type: custom:bubble-card
+                      card_type: separator
+                      styles: |
+                        .bubble-line {
+                          background: #fab387;
+                          opacity: 0.5;
+                        }
+                      name: Pending Requests
+                      icon: mdi:clock-outline
+                    - type: custom:jellyseerr-requests-card
+                      entity: sensor.jellyseerr_pending_requests
+                      show_title: false
+                      show_actions: true
+              - type: conditional
+                conditions:
+                  - entity: input_select.request_view
+                    state: Approved
+                card:
+                  type: vertical-stack
+                  cards:
+                    - type: custom:bubble-card
+                      card_type: separator
+                      styles: |
+                        .bubble-line {
+                          background: #a6e3a1;
+                          opacity: 0.5;
+                        }
+                      name: Approved Requests
+                      icon: mdi:check-circle
+                    - type: custom:jellyseerr-requests-card
+                      entity: sensor.jellyseerr_approved_requests
+                      show_title: false
+                      show_actions: false
+              - type: conditional
+                conditions:
+                  - entity: input_select.request_view
+                    state: Processing
+                card:
+                  type: vertical-stack
+                  cards:
+                    - type: custom:bubble-card
+                      card_type: separator
+                      styles: |
+                        .bubble-line {
+                          background: #89b4fa;
+                          opacity: 0.5;
+                        }
+                      name: Processing Requests
+                      icon: mdi:progress-clock
+                    - type: custom:jellyseerr-requests-card
+                      entity: sensor.jellyseerr_processing_requests
+                      show_title: false
+                      show_actions: false
+              - type: conditional
+                conditions:
+                  - entity: input_select.request_view
+                    state: Available
+                card:
+                  type: vertical-stack
+                  cards:
+                    - type: custom:bubble-card
+                      card_type: separator
+                      styles: |
+                        .bubble-line {
+                          background: #cba6f7;
+                          opacity: 0.5;
+                        }
+                      name: Available Requests
+                      icon: mdi:download-circle
+                    - type: custom:jellyseerr-requests-card
+                      entity: sensor.jellyseerr_available_requests
+                      show_title: false
+                      show_actions: false
+          - type: vertical-stack
+            cards:
+              - type: custom:bubble-card
+                card_type: pop-up
+                hash: '#automation-popup'
+                button_type: name
+                bg_color: '#1e1e2e'
+                name: Automation Settings
+                icon: mdi:robot
+              - type: vertical-stack
+                cards:
+                  - type: entities
+                    entities:
+                      - entity: input_select.jellyseerr_auto_approval_mode
+                        name: Mode
+                      - entity: input_number.jellyseerr_rating_threshold
+                        name: Min Rating
+                      - entity: input_text.jellyseerr_trusted_users
+                        name: Trusted Users
+                      - entity: input_boolean.jellyseerr_notify_new_requests
+                        name: Notify New
+                      - entity: input_boolean.jellyseerr_notify_auto_approval
+                        name: Notify Auto
+        column_span: 1
+    header:
+      layout: center
+      badges_position: bottom
+      badges_wrap: wrap

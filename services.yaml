@@ -6,6 +6,7 @@ approve_request:
       name: Request ID
       description: The ID of the request to approve
       required: true
+      example: 123
       selector:
         number:
           mode: box
@@ -19,6 +20,7 @@ deny_request:
       name: Request ID
       description: The ID of the request to deny
       required: true
+      example: 123
       selector:
         number:
           mode: box
@@ -28,5 +30,38 @@ deny_request:
       description: Reason for denying the request
       required: false
       default: "Denied via Home Assistant"
+      example: "Already available in library"
+      selector:
+        text:
+
+batch_approve:
+  name: Batch Approve Requests
+  description: Approve multiple pending Jellyseerr requests at once
+  fields:
+    request_ids:
+      name: Request IDs
+      description: List of request IDs to approve
+      required: true
+      example: [123, 124, 125]
+      selector:
+        object:
+
+batch_deny:
+  name: Batch Deny Requests
+  description: Deny multiple pending Jellyseerr requests at once
+  fields:
+    request_ids:
+      name: Request IDs
+      description: List of request IDs to deny
+      required: true
+      example: [123, 124, 125]
+      selector:
+        object:
+    reason:
+      name: Reason
+      description: Reason for denying the requests
+      required: false
+      default: "Denied via Home Assistant"
+      example: "Content not suitable"
       selector:
         text:

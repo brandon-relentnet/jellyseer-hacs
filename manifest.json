@@ -1,13 +1,13 @@
 {
   "domain": "jellyseerr",
   "name": "Jellyseerr",
-  "codeowners": ["@custom"],
+  "codeowners": ["@brandon-relentnet"],
   "config_flow": true,
   "dependencies": [],
-  "documentation": "https://github.com/jellyfin/jellyseerr",
+  "documentation": "https://github.com/brandon-relentnet/jellyseerr-hacs",
   "integration_type": "hub",
   "iot_class": "cloud_polling",
-  "issue_tracker": "https://github.com/jellyfin/jellyseerr/issues",
+  "issue_tracker": "https://github.com/brandon-relentnet/jellyseerr-hacs/issues",
   "requirements": [],
   "version": "1.0.0"
 }
